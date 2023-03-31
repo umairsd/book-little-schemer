@@ -111,6 +111,61 @@
 
 
 
+(define pick
+  (lambda (n lat)
+    (cond
+      ((eq? n 1) (car lat))
+      (else (pick (sub1 n) (cdr lat))))))
+
+
+(define rempick
+  (lambda (n lat)
+    (cond
+      ((zero? (sub1 n)) (cdr lat))
+      (else (cons (car lat) (rempick (sub1 n) (cdr lat)))))))
+
+
+; a lat obtained by removing all the numbers.
+(define no-nums
+  (lambda (lat)
+    (cond
+      ((null? lat) (quote()))
+      (else (cond
+              ((number? (car lat)) (no-nums (cdr lat)))
+              (else (cons (car lat) (no-nums (cdr lat)))))))))
+
+
+; a lat obtained by removing all non-numbers
+(define all-nums
+  (lambda (lat)
+    (cond
+      ((null? lat) (quote()))
+      (else (cond
+              ((number? (car lat)) (cons (car lat) (all-nums (cdr lat))))
+              (else (all-nums (cdr lat))))))))
+
+(define eqan?
+  (lambda (a1 a2)
+    (cond
+      ((and (number? a1) (number? a2)) (= a1 a2))
+      ((or (number? a1) (number? a2)) #f)
+      (else (eq? a1 a2)))))
+
+
+; counts the number of times a appears in lat.
+(define occur
+  (lambda (a lat)
+    (cond
+      ((null? lat) 0)
+      (else (cond
+              ((eq? (car lat) a) (add1 (occur a (cdr lat))))
+              (else (occur a (cdr lat))))))))
+
+
+(define one?
+  (lambda (n)
+    (zero? (sub1 n))))
+
 
 ;; Tests
 (check-expect (+o 4 13) 17)
@@ -167,5 +222,29 @@
 
 (check-expect (len '(a b c d)) 4)
 
+(define lat '(lasagna spaghetti ravioli macaroni meatball))
+(check-expect (pick 4 lat) 'macaroni)
+(check-expect (pick 1 lat) 'lasagna)
+
+(check-expect (rempick 3 lat) '(lasagna spaghetti macaroni meatball))
+
+(check-expect (no-nums '(5 pears 6 prunes 9 dates)) '(pears prunes dates))
+(check-expect (no-nums '(1 2 3 4)) '())
+
+(check-expect (all-nums '(5 pears 6 prunes 9 dates)) '(5 6 9))
+(check-expect (all-nums '(1 2 3 4)) '(1 2 3 4))
+
+(check-expect (eqan? 3 3) #t)
+(check-expect (eqan? 3 4) #f)
+(check-expect (eqan? 'ab 'ab) #t)
+(check-expect (eqan? 'ab 'ac) #f)
+(check-expect (eqan? 'f 5) #f)
+
+(check-expect (occur 4 '(1 4 5 4 1 3 4)) 3)
+(check-expect (occur 9 '(1 4 5 4 1 3 4)) 0)
+
+(check-expect (one? 1) #t)
+(check-expect (one? 2) #f)
+(check-expect (one? 0) #f)
 
 (test)
