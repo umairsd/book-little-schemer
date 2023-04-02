@@ -44,6 +44,33 @@
          (else (occur* a (cdr l)))))
       (else (+ (occur* a (car l)) (occur* a (cdr l)))))))
 
+
+(define subst*
+  (lambda (new old l)
+    (cond
+      ((null? l) (quote()))
+      ((atom? (car l))
+       (cond
+         ((eq? old (car l)) (cons new (subst* new old (cdr l))))
+         (else (cons (car l) (subst* new old (cdr l))))))
+      (else (cons (subst* new old (car l))
+                  (subst* new old (cdr l)))))))
+
+
+(define insertL*
+  (lambda (new old l)
+    (cond
+      ((null? l) (quote()))
+      ((atom? (car l))
+       (cond
+         ((eq? old (car l)) (cons new
+                                  (cons (car l)
+                                        (insertL* new old (cdr l)))))
+         (else (cons (car l) (insertL* new old (cdr l))))))
+      (else (cons (insertL* new old (car l))
+                  (insertL* new old (cdr l)))))))
+
+
 ;; Tests
 (define l1 '((coffee) cup ((tea) cup) (and (hick)) cup))
 (check-expect (rember* 'cup l1) '((coffee) ((tea)) (and (hick))))
@@ -75,5 +102,38 @@
 (check-expect (occur* 'could l3) 2)
 (check-expect (occur* 'chuck l3) 4)
 (check-expect (occur* 'cup l1) 3)
+
+
+(define l4 '((banana)
+             (split ((((banana ice)))
+                     (cream (banana))
+                     sherbet))
+             (banana)
+             (bread)
+             (banana brandy)
+             banana pudding))
+(define expectedl4 '((orange)
+                     (split ((((orange ice)))
+                             (cream (orange))
+                             sherbet))
+                     (orange)
+                     (bread)
+                     (orange brandy)
+                     orange pudding))
+(check-expect (subst* 'orange 'banana l4) expectedl4)
+(check-expect (subst* 'orange 'banana '(banana (banana pudding))) '(orange (orange pudding)))
+
+(define expectedl4-1 '((yellow banana)
+                       (split ((((yellow banana ice)))
+                               (cream (yellow banana))
+                               sherbet))
+                       (yellow banana)
+                       (bread)
+                       (yellow banana brandy)
+                       yellow banana pudding))
+(check-expect (insertL* 'yellow 'banana l4) expectedl4-1)
+(check-expect (insertL* 'yellow 'banana '(banana pudding))
+              '(yellow banana pudding))
+
 
 (test)
