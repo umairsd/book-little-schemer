@@ -144,6 +144,8 @@
               ((number? (car lat)) (cons (car lat) (all-nums (cdr lat))))
               (else (all-nums (cdr lat))))))))
 
+; Returns true if its two arguments are the same atom.
+; Uses = for numbers, and eq? for all other atoms.
 (define eqan?
   (lambda (a1 a2)
     (cond

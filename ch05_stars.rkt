@@ -5,6 +5,16 @@
   (lambda (x)
     (and (not (pair? x)) (not (null? x)))))
 
+; Returns true if its two arguments are the same atom.
+; Uses = for numbers, and eq? for all other atoms.
+(define eqan?
+  (lambda (a1 a2)
+    (cond
+      ((and (number? a1) (number? a2)) (= a1 a2))
+      ((or (number? a1) (number? a2)) #f)
+      (else (eq? a1 a2)))))
+
+
 ;;------------------
 
 ; Recursively remove a from all elements of the list `l`
@@ -71,6 +81,38 @@
                   (insertL* new old (cdr l)))))))
 
 
+; Checks if the given atom exists in the list.
+(define member*
+  (lambda (a l)
+    (cond
+      ((null? l) #f)
+      ((atom? (car l))
+       (or (eq? a (car l)) (member* a (cdr l))))
+      (else (or (member* a (car l))
+                (member* a (cdr l)))))))
+
+
+; Finds the leftmost atom in a non-empty list of S-expressions
+; that does not contain the empty list.
+(define leftmost
+  (lambda (l)
+    (cond
+      ((atom? (car l)) (car l))
+      (else (leftmost (car l))))))
+    
+
+; Checks if two lists are equal, using `eqan?`
+(define eqlist?
+  (lambda (l1 l2)
+    (cond
+      ((and (null? l1) (null? l2)) #t)
+      ((or (null? l1) (null? l2)) #f)
+      ((and (atom? (car l1)) (atom? (car l2)))
+       (and (eqan? (car l1) (car l2)) (eqlist? (cdr l1) (cdr l2))))
+      ((or (atom? (car l1)) (atom? (car l2))) #f)
+      (else (and (eqlist? (car l1) (car l2)) (eqlist? (cdr l1) (cdr l2)))))))
+
+
 ;; Tests
 (define l1 '((coffee) cup ((tea) cup) (and (hick)) cup))
 (check-expect (rember* 'cup l1) '((coffee) ((tea)) (and (hick))))
@@ -135,5 +177,22 @@
 (check-expect (insertL* 'yellow 'banana '(banana pudding))
               '(yellow banana pudding))
 
+(check-expect (member* 'split l4) #t)
+(check-expect (member* 'abc l4) #f)
+(check-expect (member* 'banana l4) #t)
+
+(check-expect (leftmost '((potato) (chips ((with) fish) (chips)))) 'potato)
+(check-expect (leftmost '(((hot) (tuna (and))) cheese)) 'hot)
+(check-error (leftmost '(((() four)) 17 (seventeen))))
+(check-error (leftmost (quote ())))
+
+(check-expect (eqlist? '(strawberry ice cream) '(strawberry ice cream)) #t)
+(check-expect (eqlist? '(strawberry ice cream) '(strawberry cream ice)) #f)
+(check-expect (eqlist? '(banana ((split))) '((banana) (split))) #f)
+(check-expect (eqlist? '(beef ((sausage)) (and (soda)))
+                       '(beef ((salami)) (and (soda)))) #f)
+
+(check-expect (eqlist? '(beef ((sausage)) (and (soda)))
+                       '(beef ((sausage)) (and (soda)))) #t)
 
 (test)
