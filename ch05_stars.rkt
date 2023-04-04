@@ -102,17 +102,67 @@
     
 
 ; Checks if two lists are equal, using `eqan?`
-(define eqlist?
+(define eqlist1?
   (lambda (l1 l2)
     (cond
       ((and (null? l1) (null? l2)) #t)
       ((or (null? l1) (null? l2)) #f)
       ((and (atom? (car l1)) (atom? (car l2)))
-       (and (eqan? (car l1) (car l2)) (eqlist? (cdr l1) (cdr l2))))
+       (and (eqan? (car l1) (car l2)) (eqlist1? (cdr l1) (cdr l2))))
       ((or (atom? (car l1)) (atom? (car l2))) #f)
-      (else (and (eqlist? (car l1) (car l2)) (eqlist? (cdr l1) (cdr l2)))))))
+      (else (and (eqlist1? (car l1) (car l2))
+                 (eqlist1? (cdr l1) (cdr l2)))))))
 
 
+; Checks if two S-expressions are the same.
+(define equal?
+  (lambda (s1 s2)
+    (cond
+      ((and (atom? s1) (atom? s2)) (eqan? s1 s2))
+      ((or (atom? s1) (atom? s2)) #f)
+      (else (eqlist? s1 s2)))))
+
+
+; Re-write eqlist? in terms of equal?.
+(define eqlist?
+  (lambda (l1 l2)
+    (cond
+      ((and (null? l1) (null? l2)) #t)
+      ((or (null? l1) (null? l2)) #f)
+      (else (and (equal? (car l1) (car l2))
+                 (eqlist? (cdr l1) (cdr l2)))))))
+
+
+; s is any S-expression, and l is a list of S-expressions.
+; We need to ask 3-questions, per the First Commandment.
+(define rember1
+  (lambda (s l)
+    (cond
+      ((null? l) (quote()))
+      ((atom? (car l))
+       (cond
+         ((equal? (car l) s) (cdr l))
+         (else (cons (car l)
+                     (rember1 s (cdr l))))))
+      (else (cond
+              ((equal? (car l) s) (cdr l))
+              (else (cons (car l) (rember1 s (cdr l)))))))))
+
+
+; Simplified.
+; s is any S-expression, and l is a list of S-expressions.
+; We need to ask 3-questions, per the First Commandment.
+(define rember
+  (lambda (s l)
+    (cond
+      ((null? l) (quote()))
+      ((equal? (car l) s) (cdr l))
+      (else (cons (car l)
+                  (rember s (cdr l)))))))
+
+
+
+;; ------------------------------
 ;; Tests
 (define l1 '((coffee) cup ((tea) cup) (and (hick)) cup))
 (check-expect (rember* 'cup l1) '((coffee) ((tea)) (and (hick))))
@@ -186,6 +236,16 @@
 (check-error (leftmost '(((() four)) 17 (seventeen))))
 (check-error (leftmost (quote ())))
 
+(check-expect (eqlist1? '(strawberry ice cream) '(strawberry ice cream)) #t)
+(check-expect (eqlist1? '(strawberry ice cream) '(strawberry cream ice)) #f)
+(check-expect (eqlist1? '(banana ((split))) '((banana) (split))) #f)
+(check-expect (eqlist1? '(beef ((sausage)) (and (soda)))
+                        '(beef ((salami)) (and (soda)))) #f)
+
+(check-expect (eqlist1? '(beef ((sausage)) (and (soda)))
+                        '(beef ((sausage)) (and (soda)))) #t)
+
+
 (check-expect (eqlist? '(strawberry ice cream) '(strawberry ice cream)) #t)
 (check-expect (eqlist? '(strawberry ice cream) '(strawberry cream ice)) #f)
 (check-expect (eqlist? '(banana ((split))) '((banana) (split))) #f)
@@ -194,5 +254,30 @@
 
 (check-expect (eqlist? '(beef ((sausage)) (and (soda)))
                        '(beef ((sausage)) (and (soda)))) #t)
+
+
+
+(define lat '(lamb chops and mint jelly))
+(check-expect (rember 'mint lat) '(lamb chops and jelly))
+
+(define l5 '((banana)
+             (split ((((banana ice)))
+                     (cream (banana))
+                     sherbet))
+             (banana)
+             (bread)
+             (banana brandy)
+             banana pudding))
+
+(define expectedl5-1 '((split ((((banana ice)))
+                               (cream (banana))
+                               sherbet))
+                       (banana)
+                       (bread)
+                       (banana brandy)
+                       banana pudding))
+
+(check-expect (rember1 '(banana) l5) expectedl5-1)
+(check-expect (rember '(banana) l5) expectedl5-1)
 
 (test)
