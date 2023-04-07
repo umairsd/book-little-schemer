@@ -193,6 +193,35 @@
                 '(6 and)))
 
 
+(define a-pair?
+  (lambda (l)
+    (cond
+      ((atom? l) #f)
+      ((null? l) #f)
+      ((null? (car l)) #f)
+      ((null? (cdr l)) #f)
+      (else (null? (cdr (cdr l)))))))
+
+(module+ test
+  (check-true (a-pair? '(a b)))
+  (check-true (a-pair? '(a (b))))
+  (check-false (a-pair? '(a)))
+  (check-false (a-pair? '(a b c))))
+
+
+(define first
+  (lambda (p)
+    (car p)))
+
+(define second
+  (lambda (p)
+    (cdr p)))
+
+(define build
+  (lambda (s1 s2)
+    (cons s1 (cons s2 (quote ())))))
+
+
 (define addtoset
   (lambda (a lat)
     (cond
