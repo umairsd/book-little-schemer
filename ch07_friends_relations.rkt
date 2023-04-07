@@ -100,6 +100,99 @@
                         '(four pounds chicken of horseradish))))
 
 
+; Define subset? using and.
+(define subset1?
+  (lambda (set1 set2)
+    (cond
+      ((null? set1) #t)
+      (else (and (member? (car set1) set2)
+                 (subset1? (cdr set1) set2))))))
+
+(module+ test
+  (define set1a '(5 chicken wings))
+  (define set2a '(5 hamburgers
+                    2 pieces fried chicken and
+                    light duckling wings))
+  (check-true (subset? set1a set2a))
+  (check-false (subset? set2a set1a))
+  (check-false (subset? '(4 pounds of horseradish)
+                        '(four pounds chicken of horseradish))))
+
+
+; Checks if two sets are equal.
+(define eqset?
+  (lambda (set1 set2)
+    (and (subset? set1 set2) (subset? set2 set1))))
+
+(module+ test
+  (check-true (eqset? '(6 large chickens with wings)
+                      '(6 chickens with large wings))))
+
+
+; Checks if the interesection of two sets is non-empty.
+(define intersect?
+  (lambda (set1 set2)
+    (cond
+      ((null? set1) #f)
+      (else (or (member? (car set1) set2)
+                (intersect? (cdr set1) set2))))))
+
+(module+ test
+  (check-true (intersect? '(stewed tomatoes and macaroni)
+                          '(macaroni and cheese)))
+  (check-false (intersect? '(stewed tomatoes and macaroni)
+                           '(cheese pizza))))
+  
+
+; Intresection of two sets.
+(define intersect
+  (lambda (set1 set2)
+    (cond
+      ((null? set1) (quote ()))
+      ((member? (car set1) set2)
+       (cons (car set1)
+             (intersect (cdr set1) set2)))
+      (else (intersect (cdr set1) set2)))))
+
+(module+ test
+  (check-equal? (intersect '(stewed tomatoes and macaroni)
+                           '(macaroni and cheese))
+                '(and macaroni)))
+
+
+; Union of two sets.
+(define union
+  (lambda (set1 set2)
+    (cond
+      ((null? set1) set2)
+      ((member? (car set1) set2) (union (cdr set1) set2))
+      (else (cons (car set1) (union (cdr set1) set2))))))
+
+(module+ test
+  (check-equal? (union '(stewed tomatoes and macaroni casserole)
+                       '(macaroni and cheese))
+                '(stewed tomatoes casserole macaroni and cheese)))
+
+
+; intersection of all sets in a list of sets, assuming that the list
+; is not empty.
+(define intersectall
+  (lambda (l-set)
+    (cond
+      ; ((null? l-set) (quote ())) ;; Assumes that list is not empty.
+      ((null? (cdr l-set)) (car l-set))
+      (else (intersect (car l-set) (intersectall (cdr l-set)))))))
+
+(module+ test
+  (check-equal? (intersectall '((a b c) (c a d e) (e f g h a b)))
+                '(a))
+  (check-equal? (intersectall '((6 pears and)
+                                (3 peaches and 6 peppers)
+                                (8 pears and 6 plums)
+                                (and 6 prunes with some apples)))
+                '(6 and)))
+
+
 (define addtoset
   (lambda (a lat)
     (cond
