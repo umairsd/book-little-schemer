@@ -32,18 +32,18 @@
 ;;------------------
 
 
-(define myset?
+(define set?
   (lambda (lat)
     (cond
       ((null? lat) #t)
       ((member? (car lat) (cdr lat)) #f)
-      (else (myset? (cdr lat))))))
+      (else (set? (cdr lat))))))
 
 (module+ test
-  (check-true (myset? '(apples peaches plums)))
-  (check-false (myset? '(apples apples peaches)))
-  (check-true (myset? '()))
-  (check-false (myset? '(apple 3 pear 4 9 apple 3 4))))
+  (check-true (set? '(apples peaches plums)))
+  (check-false (set? '(apples apples peaches)))
+  (check-true (set? '()))
+  (check-false (set? '(apple 3 pear 4 9 apple 3 4))))
 
 
 ; Convert a lat into a set.
@@ -215,11 +215,81 @@
 
 (define second
   (lambda (p)
-    (cdr p)))
+    (car (cdr p))))
 
 (define build
   (lambda (s1 s2)
     (cons s1 (cons s2 (quote ())))))
+
+(define third
+  (lambda (l)
+    (car (cdr (cdr l)))))
+
+
+(define firsts
+  (lambda (l)
+    (cond
+      ((null? l) (quote()))
+      (else (cons (first (car l)) (firsts (cdr l)))))))
+
+
+; Checks whether the list of relations is a function (i.e. the list
+; of first elements is a set.
+(define fun?
+  (lambda (rel)
+    (set? (firsts rel))))
+  
+(module+ test
+  (define rel1 '((8 3) (4 2) (7 6) (6 2) (3 4)))
+  (check-true (fun? rel1))
+  (check-false (fun? '((8 3) (8 2)))))
+
+
+; Reverses the first and second elements of all the pairs in the list.
+(define revrel1
+  (lambda (l)
+    (cond
+      ((null? l) (quote ()))
+      (else (cons (build (second (car l)) (first (car l)))
+                  (revrel1 (cdr l)))))))
+
+(module+ test
+  (check-equal? (revrel1 rel1) '((3 8) (2 4) (6 7) (2 6) (4 3))))
+
+
+(define revpair
+  (lambda (pair)
+    (build (second pair) (first pair))))
+
+
+; Reverses the first and second elements of all the pairs in the list.
+; Uses the `revpair` function for better readability.
+(define revrel
+  (lambda (l)
+    (cond
+      ((null? l) (quote ()))
+      (else (cons (revpair (car l))
+                  (revrel (cdr l)))))))
+
+(module+ test
+  (check-equal? (revrel rel1) '((3 8) (2 4) (6 7) (2 6) (4 3))))
+
+
+; Full function: both domain and range are a set.
+(define fullfun?
+  (lambda (rel)
+    (and (fun? rel) (fun? (revrel rel)))))
+
+(module+ test
+  (check-false (fullfun? '((8 3) (4 2) (7 6) (6 2) (3 4))))
+  (check-true (fullfun? '((8 3) (4 2) (7 6) (6 5) (3 4))))
+  (check-false (fullfun? '((grape raisin) (plum prune) (stewed prune)))))
+
+
+(define one-to-one?
+  (lambda (fun)
+    (fun? (revrel fun))))
+
 
 
 (define addtoset
