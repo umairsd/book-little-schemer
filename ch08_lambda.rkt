@@ -224,4 +224,150 @@
   (check-equal? (subst1 'pudding 'jelly l3) '(lamb chops and mint pudding))
   (check-equal? (subst1 'beef 'lamb l3) '(beef chops and mint jelly)))
 
+
+; Define rember using `insert-g`.
+(define seqrem
+  (lambda (new old l)
+    l))
+
+(define rember
+  (lambda (a l)
+    ((insert-g seqrem) #f a l)))
+
+(module+ test
+  (check-equal? (rember 'mint '(lamb chops and mint jelly))
+                '(lamb chops and jelly)))
+
+
+
+#|
+; Gets the first part of the arithmetic expression, which is the operator.
+; The aexp is of the form (+ 4 3), (+ (x 4 5) 1), etc.
+(define operator
+  (lambda (aexp)
+    (car aexp)))
+
+; The value of an arithmetic expression.
+(define value
+  (lambda (nexp)
+    (cond
+      ((atom? nexp) nexp)
+      ((eq? (operator nexp) (quote +)) (+ (value (1st-sub-exp nexp)) (value (2nd-sub-exp nexp))))
+      ((eq? (operator nexp) (quote x)) (* (value (1st-sub-exp nexp)) (value (2nd-sub-exp nexp))))
+      (else (expt (value (1st-sub-exp nexp)) (value (2nd-sub-exp nexp)))))))
+
+(module+ test
+  (check-eq? (value 4) 4)
+  (check-eq? (value '(+ 4 3)) 7)
+  (check-eq? (value '(+ 4 (+ 3 1))) 8)
+  (check-eq? (value '(+ 4 (x 3 5))) 19)
+  (check-eq? (value '(+ (x 3 5) 4)) 19)
+  (check-eq? (value '(a 3 4)) 81)
+  )
+|#
+
+
+; copied from chapter 6.
+(define 1st-sub-exp
+  (lambda (aexp)
+    (car (cdr aexp))))
+
+; copied from chapter 6.
+(define 2nd-sub-exp
+  (lambda (aexp)
+    (car (cdr (cdr aexp)))))
+
+; copied from chapter 6.
+(define operator
+  (lambda (aexp)
+    (car aexp)))
+
+
+(define atom-to-function
+  (lambda (x)
+    (cond
+      ((eq? x (quote +)) +)
+      ((eq? x (quote *)) *)
+      (else expt))))
+
+
+; Re-write `value` by abstracting the common functionality into
+; a separate function.
+(define value
+  (lambda (nexp)
+    (cond
+      ((atom? nexp) nexp)
+      (else ((atom-to-function (operator nexp))
+             (value (1st-sub-exp nexp))
+             (value (2nd-sub-exp nexp)))))))
+
+
+(module+ test
+  (check-eq? (value 4) 4)
+  (check-eq? (value '(+ 4 3)) 7)
+  (check-eq? (value '(+ 4 (+ 3 1))) 8)
+  (check-eq? (value '(+ 4 (* 3 5))) 19)
+  (check-eq? (value '(+ (* 3 5) 4)) 19)
+  (check-eq? (value '(a 3 4)) 81))
+
+
+
+
+#|
+(define multirember
+  (lambda (a lat)
+    (cond
+      ((null? lat) (quote()))
+      (else (cond
+              ((eq? (car lat) a) (multirember a (cdr lat)))
+              (else (cons (car lat)
+                          (multirember a (cdr lat)))))))))
+|#
+
+
+(define multirember-f
+  (lambda (test?)
+    (lambda (a lat)
+      (cond
+        ((null? lat) (quote ()))
+        ((test? a (car lat)) ((multirember-f test?) a (cdr lat)))
+        (else (cons (car lat)
+                    ((multirember-f test?) a (cdr lat))))))))
+
+(module+ test
+  (define ls0 '(lamb and chops and gravy and mint and jelly))
+  (check-equal? ((multirember-f eq?) 'and ls0)
+                '(lamb chops gravy mint jelly))
+  ; eq? won't work for nested s-expressions.
+  (check-equal? ((multirember-f eq?) '(c d) '(a b c (c d) (d (e f)) (c d)))
+                '(a b c (c d) (d (e f)) (c d)))
+  (check-equal? ((multirember-f equal?) '(c d) '(a b c (c d) (d (e f)) (c d)))
+                '(a b c (d (e f)))))
+
+
+
+; multiremeber such that it takes a function as a test without
+; a specific value to compare against.
+(define multiremberT
+  (lambda (test? lat)
+    (cond
+      ((null? lat) (quote ()))
+      ((test? (car lat)) (multiremberT test? (cdr lat)))
+      (else (cons (car lat)
+                  (multiremberT test? (cdr lat)))))))
+
+(module+ test
+  (define ls1 '(lamb and chops and gravy and mint and jelly))  
+  (check-equal? (multiremberT (lambda (x) (eq? x 'and))
+                              ls1)
+                '(lamb chops gravy mint jelly))
+  ; eq? won't work for nested s-expressions.
+  (define ls2 '(a b c (c d) (d (e f)) (c d)))
+  (check-equal? (multiremberT (lambda (x) (eq? x '(c d)))
+                              ls2)
+                ls2)
   
+  (check-equal? (multiremberT (lambda (x) (equal? x '(c d)))
+                              ls2)
+                '(a b c (d (e f)))))
+
