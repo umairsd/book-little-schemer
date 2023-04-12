@@ -371,3 +371,44 @@
                               ls2)
                 '(a b c (d (e f)))))
 
+
+; It looks at every atom of the `lat` to see whether it is `eq?`
+; to `a`. Those atoms that are not, are collected in one list `ls1`.
+; the others for which the answer is true are collected in a second
+; list `ls2`. Finally it determines the value of `f ls1 ls2`
+(define multirember&co
+  (lambda (a lat col)
+    (cond
+      ; (1) Base case. Collect empty lists.
+      ((null? lat) (col (quote ()) (quote ())))
+      ; (2) The head of the list is equal to `a`. Collect it in `seen`.
+      ((eq? a (car lat))
+       (multirember&co a
+                       (cdr lat)
+                       (lambda (newlat seen)
+                         (col newlat (cons (car lat) seen)))))
+      ; (3) The head of the list is not equal to `a`. Collect it in `newlat`.
+      (else
+       (multirember&co a
+                       (cdr lat)
+                       (lambda (newlat seen)
+                         (col (cons (car lat) newlat) seen)))))))
+
+(module+ test
+  (check-equal? (multirember&co 'tuna '(strawberries tuna and swordfish) list)
+                '((strawberries and swordfish) (tuna)))
+  (check-equal? (multirember&co 'b '(a b c b d e b) list)
+                '((a c d e) (b b b)))
+  )
+
+
+(define a-friend
+  (lambda (x y)
+    (null? y)))
+
+(module+ test
+  (check-true (multirember&co 'tuna '() a-friend))
+  (check-false (multirember&co 'tuna '(tuna) a-friend))
+  (check-false (multirember&co 'tuna '(strawberries tuna and swordfish) a-friend))
+  (check-true (multirember&co 'tuna '(strawberries and swordfish) a-friend))
+  )
