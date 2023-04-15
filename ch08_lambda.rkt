@@ -412,3 +412,78 @@
   (check-false (multirember&co 'tuna '(strawberries tuna and swordfish) a-friend))
   (check-true (multirember&co 'tuna '(strawberries and swordfish) a-friend))
   )
+
+
+; (my version)
+; inserts new to the left of oldL and to the right of oldR in lat if
+; oldL and oldR are different.
+(define multiinsertLR_
+  (lambda (new oldL oldR lat)
+    (cond
+      ((null? lat) (quote ()))
+      ((and (eq? (car lat) oldL)
+            (not (eq? oldL oldR)))
+       (cons new
+             (cons oldL
+                   (multiinsertLR_ new oldL oldR (cdr lat)))))
+      ((and (eq? (car lat) oldR)
+            (not (eq? oldL oldR)))
+       (cons oldR
+             (cons new
+                   (multiinsertLR_ new oldL oldR (cdr lat)))))
+      (else (cons (car lat)
+                  (multiinsertLR_ new oldL oldR (cdr lat)))))))
+
+(module+ test
+  (check-equal? (multiinsertLR_ 'x 'b 'e '(a b c d e f))
+                '(a x b c d e x f))
+  (check-equal? (multiinsertLR_ 'x 'b 'b '(a b c d e f))
+                '(a b c d e f))
+  )
+
+
+#|
+ (book's version)
+ Note: Initially, this seemed a bit weird to me. See the tests
+
+ My interpretation:
+ - (1) it _always_ inserts to the left of oldL, in both
+       cases: oldL == oldR and oldL != oldR)
+ - (2) it also inserts to the right of oldR (which will happen only
+       if oldL and oldR are different).
+|#
+
+; inserts new to the left of oldL and to the right of oldR in lat if
+; oldL and oldR are different.
+(define multiinsertLR
+  (lambda (new oldL oldR lat)
+    (cond
+      ((null? lat) (quote ()))
+      ((eq? (car lat) oldL)
+       (cons new
+             (cons oldL
+                   (multiinsertLR new oldL oldR (cdr lat)))))
+      ((eq? (car lat) oldR)
+       (cons oldR
+             (cons new
+                   (multiinsertLR new oldL oldR (cdr lat)))))
+      (else (cons (car lat)
+                  (multiinsertLR new oldL oldR (cdr lat)))))))
+
+(module+ test
+  (check-equal? (multiinsertLR 'x 'b 'e '(a b c d e f))
+                '(a x b c d e x f))
+  (check-equal? (multiinsertLR 'x 'b 'b '(a b c d e f))
+                '(a x b c d e f))
+  (check-equal? (multiinsertLR 'X 'A 'A '(A B C D A B A))
+                '(X A B C D X A B X A))
+  ; I think output should be the one below
+  ;'(X A X B C D X A X B X A X))
+  (check-equal? (multiinsertLR 'X 'A 'B '(A B C D A B A))
+                '(X A B X C D X A B X X A))
+  )
+
+
+
+     
+
