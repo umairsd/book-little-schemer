@@ -477,13 +477,105 @@
                 '(a x b c d e f))
   (check-equal? (multiinsertLR 'X 'A 'A '(A B C D A B A))
                 '(X A B C D X A B X A))
-  ; I think output should be the one below
+  ; I thought output should be the one below. See explanation above why
+  ; this isn't the case.
   ;'(X A X B C D X A X B X A X))
   (check-equal? (multiinsertLR 'X 'A 'B '(A B C D A B A))
                 '(X A B X C D X A B X X A))
   )
 
 
+;
+(define multiinsertLR&co
+  (lambda (new oldL oldR lat col)
+    (cond
+      ((null? lat) (col (quote ()) 0 0))
+      ((eq? (car lat) oldL)
+       (multiinsertLR&co new oldL oldR (cdr lat)
+                         (lambda (newlat leftCount rightCount)
+                           (col (cons new (cons oldL newlat))
+                                (add1 leftCount)
+                                rightCount))))
+      ((eq? (car lat) oldR)
+       (multiinsertLR&co new oldL oldR (cdr lat)
+                         (lambda (newlat leftCount rightCount)
+                           (col (cons oldR (cons new newlat))
+                                leftCount
+                                (add1 rightCount)))))
+      (else (multiinsertLR&co new oldL oldR (cdr lat)
+                              (lambda (newlat leftCount rightCount)
+                                (col (cons (car lat) newlat)
+                                     leftCount
+                                     rightCount)))))))
 
-     
+(module+ test
+  (check-equal? (multiinsertLR&co 'cranberries 'fish 'chips '() list) '(() 0 0))
+  (check-equal? (multiinsertLR&co 'X 'A 'B '(A B C D A B A) list)
+                '((X A B X C D X A B X X A) 3 2))
+  (check-equal? (multiinsertLR&co 'x 'b 'b '(a b c d e f) list)
+                '((a x b c d e f) 1 0))
+  )
 
+
+(define even?
+  (lambda (n)
+    (= (* (quotient n 2) 2) n)))
+              
+
+(define evens-only*
+  (lambda (l)
+    (cond
+      ((null? l) (quote ()))
+      ((atom? (car l))
+       (cond
+         ((even? (car l)) (cons (car l)
+                                (evens-only* (cdr l))))
+         (else (evens-only* (cdr l)))))
+      (else (cons (evens-only* (car l))
+                  (evens-only* (cdr l)))))))
+    
+
+(module+ test
+  (check-equal? (evens-only* '(1 2 2 3 4 5 6 7 8 9))
+                '(2 2 4 6 8))
+  (check-equal? (evens-only* '((9 1 2 8) 3 10 ((9 9) 7 6) 2))
+                '((2 8) 10 (() 6) 2))
+  )
+
+
+; Builds a nested list of even numbers by removing the odd
+; ones from its argument and simultaneously multiplies the
+; even numbers and sums up the odd numbers that occur in its
+; argument.
+(define evens-only*&co
+  (lambda (l col)
+    (cond
+      ((null? l) (col (quote ()) 1 0))
+      ((atom? (car l))
+       (cond
+         ((even? (car l))
+          (evens-only*&co (cdr l)
+                          (lambda (newL p s)
+                            (col (cons (car l) newL)
+                                 (* (car l) p)
+                                 s))))
+         (else
+          (evens-only*&co (cdr l)
+                          (lambda (newL p s)
+                            (col newL
+                                 p
+                                 (+ (car l) s)))))))
+      (else (evens-only*&co
+             (car l)
+             (lambda (carnewL carP carS)
+               (evens-only*&co (cdr l)
+                               (lambda (cdrnewL cdrP cdrS)
+                                 (col (cons carnewL cdrnewL)
+                                      (* carP cdrP)
+                                      (+ carS cdrS))))))))))
+      
+
+(module+ test
+  (check-equal? (evens-only*&co '((9 1 2 8) 3 10 ((9 9) 7 6) 2) list)
+                '(((2 8) 10 (() 6) 2) 1920 38))
+  )
