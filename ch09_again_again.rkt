@@ -13,10 +13,28 @@
       (else (or (equal? (car lat) a)
                 (member? a (cdr lat)))))))
 
+(define first
+  (lambda (p)
+    (car p)))
+
+(define second
+  (lambda (p)
+    (car (cdr p))))
+
+(define build
+  (lambda (s1 s2)
+    (cons s1 (cons s2 (quote ())))))
+
+(define a-pair?
+  (lambda (l)
+    (cond
+      ((atom? l) #f)
+      ((null? l) #f)
+      ((null? (car l)) #f)
+      ((null? (cdr l)) #f)
+      (else (null? (cdr (cdr l)))))))
+
 ;;------------------
-
-
-
 
 
 (define pick
@@ -71,12 +89,55 @@
   (check-false (looking 'caviar '(6 2 grits caviar 5 7 3))))
 
 
+; The function shift takes a pair whose first component
+; is a pair and builds a pair by shifting the second part
+; of the first component into the second component.
+(define shift
+  (lambda (fp)
+    (build (first (first fp)) (build (second (first fp)) (second fp))))) 
+  
+(module+ test
+  (check-equal? (shift '((a b) c)) '(a (b c)))
+  (check-equal? (shift '((a b) (c d))) '(a (b (c d)))))
+
+
+
+(define align
+  (lambda (pora)
+    (cond
+      ((atom? pora) pora)
+      ((a-pair? (first pora)) (align (shift pora)))
+      (else (build (first pora)
+                   (align (second pora)))))))
+
+
+(define length*
+  (lambda (pora)
+    (cond
+      ((atom? pora) 1)
+      (else (+ (length* (first pora))
+               (length* (second pora)))))))
+
+(module+ test
+  (check-equal? (length* '((a b) c)) 3)
+  (check-equal? (length* '((a b) (c d))) 4))
+
+
+(define weight*
+  (lambda (pora)
+    (cond
+      ((atom? pora) 1)
+      (else (+ (* 2 (weight* (first pora)))
+               (weight* (second pora)))))))
+
+(module+ test
+  (check-equal? (weight* '((a b) c)) 7)
+  (check-equal? (weight* '(a (b c))) 5)
+  (check-equal? (weight* '((a b) (c d))) 9))
 
 
 
 
 
 
-
-
-
+  
