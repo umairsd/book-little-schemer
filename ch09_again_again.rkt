@@ -34,6 +34,10 @@
       ((null? (cdr l)) #f)
       (else (null? (cdr (cdr l)))))))
 
+(define revpair
+  (lambda (pair)
+    (build (second pair) (first pair))))
+
 ;;------------------
 
 
@@ -135,6 +139,45 @@
   (check-equal? (weight* '(a (b c))) 5)
   (check-equal? (weight* '((a b) (c d))) 9))
 
+
+; Swap the components of pairs when the first component is a pair.
+(define shuffle
+  (lambda (pora)
+    (cond
+      ((atom? pora) pora)
+      ((a-pair? (first pora)) (shuffle (revpair pora)))
+      (else (build (first pora)
+                   (shuffle (second pora)))))))
+
+
+(module+ test
+  (check-equal? (shuffle '(a (b c)))
+                '(a (b c))))
+
+
+(define one?
+  (lambda (n)
+    (eq? n 1)))
+
+; Collatz function.
+(define C
+  (lambda (n)
+    (cond
+      ((one? n) 1)
+      (else
+       (cond
+         ((even? n) (C (quotient n 2)))
+         (else (C (add1 (* 3 n)))))))))
+              
+
+; Ackermann function.
+(define A
+  (lambda (n m)
+    (cond
+      ((zero? n) (add1 m))
+      ((zero? m) (A (sub1 n) 1))
+      (else (A (sub1 n)
+               (A n (sub1 m)))))))
 
 
 
