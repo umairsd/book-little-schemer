@@ -182,5 +182,83 @@
 
 
 
+(define eternity
+  (lambda (x)
+    (eternity x)))
 
-  
+
+(define l2
+  (lambda (l) ; length <= 2
+    (cond
+      ((null? l) 0)
+      (else
+       (add1
+        ((lambda (l) ; length <= 1 
+           (cond
+             ((null? l) 0)
+             (else
+              (add1
+               ((lambda (l)  ; length0
+                  (cond
+                    ((null? l) 0)
+                    (else (add1 (eternity (cdr l))))))
+                (cdr l))))))
+         (cdr l))))))
+  )
+             
+(module+ test
+  (check-equal? (l2 '()) 0)
+  (check-equal? (l2 '(a)) 1)
+  (check-equal? (l2 '(a b)) 2)
+  )
+
+
+; Defines length0, such that we pass in a function (eternity)
+((lambda (g-length)
+   (lambda (l)
+     (cond
+       ((null? l) 0)
+       (else
+        (add1 (g-length (cdr l)))))))
+ eternity)
+
+
+((lambda (f)   ; length<=1
+   (lambda (l)
+     (cond
+       ((null? l) 0)
+       (else
+        (add1 (f (cdr l)))))))
+ ((lambda (g)  ; length0
+    (lambda (l)
+      (cond
+        ((null? l) 0)
+        (else
+         (add1 (g (cdr l)))))))
+  eternity
+  )
+ )
+
+
+
+((lambda (h)   ; length<=2 (takes a function)
+   (lambda (l)
+     (cond
+       ((null? l) 0)
+       (else (add1 (h (cdr l)))))))
+ ((lambda (g)  ; length<=1 (argument to length<=2)
+    (lambda (l)
+      (cond
+        ((null? l) 0)
+        (else (add1 (g (cdr l)))))))
+  ((lambda (f) ; length0 (argument to length<=1)
+     (lambda (l)
+       (cond
+         ((null? l) 0)
+         (else (add1 (f (cdr l)))))))
+   eternity
+   )
+  )
+ )
+ 
+ 
