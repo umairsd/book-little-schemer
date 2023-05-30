@@ -113,8 +113,12 @@
       ((a-pair? (first pora)) (align (shift pora)))
       (else (build (first pora)
                    (align (second pora)))))))
+(module+ test
+  (check-equal? (align '((a b) (c (d (e f))))) '(a (b (c (d (e f)))))))
 
 
+
+; Counts the number of atoms in align's arguments.
 (define length*
   (lambda (pora)
     (cond
@@ -149,10 +153,10 @@
       (else (build (first pora)
                    (shuffle (second pora)))))))
 
-
 (module+ test
-  (check-equal? (shuffle '(a (b c)))
-                '(a (b c))))
+  (check-equal? (shuffle '(a (b c))) '(a (b c)))
+  (check-equal? (shuffle '((a b) c)) '(c (a b)))
+  )
 
 
 (define one?
@@ -261,4 +265,5 @@
   )
  )
  
- 
+
+
